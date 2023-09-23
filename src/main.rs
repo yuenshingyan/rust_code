@@ -2,10 +2,6 @@ use reqwest;
 use serde_json::Value;
 use polars::prelude::*;
 
-// fn print_type_of<T>(_: &T) {
-//     println!("{}", std::any::type_name::<T>())
-// }
-
 fn get_actual_value(value: Value) -> Option<String> {
     match value {
         Value::String(string_value) => Some(string_value),
@@ -59,6 +55,38 @@ async fn main() -> Result<(), reqwest::Error> {
         let mut fields: Vec<Series> = vec![Series::new(f, fields)];
         all_fields_res.append(&mut fields);
     }
+
+    let mut all_home_odds: Vec<String> = vec![];
+    let mut all_draw_odds: Vec<String> = vec![];
+    let mut all_away_odds: Vec<String> = vec![];
+
+    for i in 0..json_len {
+        let all_odds: &Vec<Value> = json[i]["odds"].as_array().unwrap();
+
+        let home_odd: &Value = &all_odds[0]["avgOdds"];
+        let draw_odd: &Value = &all_odds[1]["avgOdds"];
+        let away_odd: &Value = &all_odds[2]["avgOdds"];
+
+        let home_odd: String = get_actual_value(home_odd.clone()).unwrap();
+        let draw_odd: String = get_actual_value(draw_odd.clone()).unwrap();
+        let away_odd: String = get_actual_value(away_odd.clone()).unwrap();
+
+        let mut home_odd: Vec<String> = vec![home_odd];
+        let mut draw_odd: Vec<String> = vec![draw_odd];
+        let mut away_odd: Vec<String> = vec![away_odd];
+
+        all_home_odds.append(&mut home_odd);
+        all_draw_odds.append(&mut draw_odd);
+        all_away_odds.append(&mut away_odd);   
+    }
+
+    let mut all_home_odds: Vec<Series> = vec![Series::new("home_odds", all_home_odds)];
+    let mut all_draw_odds: Vec<Series> = vec![Series::new("draw_odds", all_draw_odds)];
+    let mut all_away_odds: Vec<Series> = vec![Series::new("away_odds", all_away_odds)];
+
+    all_fields_res.append(&mut all_home_odds);
+    all_fields_res.append(&mut all_draw_odds);
+    all_fields_res.append(&mut all_away_odds);
 
     let df = DataFrame::new(all_fields_res).unwrap();
 
